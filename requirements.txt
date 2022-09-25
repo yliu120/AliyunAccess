@@ -1,0 +1,2 @@
+# Run pip3 install -r requirements.txt
+aliyun-python-sdk-eci==1.2.2
