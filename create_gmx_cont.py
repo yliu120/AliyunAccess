@@ -15,6 +15,7 @@ DEFAULT_REGION = 'cn-zhangjiakou'
 # vCPU x4, Memory 15G, NVIDIA T4 GPU x1
 # Please see https://help.aliyun.com/document_detail/25378.html
 DEFAULT_INSTANCE = 'ecs.gn6i-c4g1.xlarge'
+DEFAULT_SPOT_STRATEGY = 'NoSpot'
 DEFAULT_CPU = 4
 DEFAULT_GPU = 1
 DEFAULT_MEMORY = 15
@@ -83,6 +84,7 @@ class Config:
   security_group_id = ConfigValue()
   nfs_server = ConfigValue()
   command = ConfigValue()
+  spot_strategy = ConfigValue(value=DEFAULT_SPOT_STRATEGY)
 
   @classmethod
   def validate(cls):
@@ -143,6 +145,7 @@ def create_container_request(config):
   request.set_accept_format('json')
   request.set_ContainerGroupName(config.ContainerGroupName)
   request.set_RestartPolicy('Never')
+  request.set_SpotStrategy(config.SpotStrategy)
   request.set_InstanceType(config.InstanceType)
   request.set_VSwitchId(config.VSwitchId)
   request.set_SecurityGroupId(config.SecurityGroupId)
@@ -169,7 +172,10 @@ def main(_):
   with open(FLAGS.conf, 'r') as f:
     config = json.load(f, object_hook=Config.as_config)
 
-  client = AcsClient(config.AccessKeyId, config.AccessSecret, config.Region)
+  client = AcsClient(config.AccessKeyId,
+                     config.AccessSecret,
+                     config.Region,
+                     debug=FLAGS.debug)
   request = create_container_request(config)
   response = client.do_action_with_exception(request)
   logging.info(str(response))
@@ -182,6 +188,7 @@ if __name__ == '__main__':
                       type=str,
                       default='',
                       help='The configuration file in JSON format.')
+  parser.add_argument('--debug', type=bool, default=False, help='Debug mode.')
 
   FLAGS, unparsed = parser.parse_known_args()
   main(unparsed)
